@@ -15,6 +15,7 @@
 #include <assert.h>
 #include <float.h>
 #include <time.h>
+#include <getopt.h> // Added: error: identifier "opterr" is undefined
 
 #include "mm.h"
 #include "memlib.h"
