@@ -1,4 +1,4 @@
-/* 
+/*
  * mm.c
  * 이 방법은 묵시적 가용 리스트(Implicit Free List)를 사용하여 메모리 할당을 관리하는 malloc 패키지를 구현하였다.
  *
@@ -9,7 +9,7 @@
  *
  * 더블 워드 정렬을 사용하며, 모든 블록의 헤더와 풋터에 크기와 할당 비트를 저장한다. (1 Word = 4 Byte)
  * 최소 블록 크기는 4 Word (16 Byte)이며, 헤더와 풋터는 각각 1 Word이다.
- * 
+ *
  */
 
 /*
@@ -23,13 +23,13 @@
  * -----------------------------------------------------------------------------------------------------------------------------------
  * | Alignment Padding | Prologue Header | Prologue Footer | ... | Free Block | ... | Free Block | ...| Free Block | Epilogue Header |
  * -----------------------------------------------------------------------------------------------------------------------------------
- * 
+ *
  * Alignment Padding: 8의 배수로 맞추기 위한 패딩 (값 = 0)
  * Prologue Header: 가용 블록의 시작을 나타내는 헤더 (값 = 8, 할당 비트 = 1)
  * Prologue Footer: 가용 블록의 끝을 나타내는 풋터 (값 = 8, 할당 비트 = 1)
  * Epilogue Header: 힙의 끝을 나타내는 헤더 (값 = 0, 할당 비트 = 1)
  *
- * 
+ *
  * 블록 구조
  * 31 . . . . . . . . . . . . . . . . . .  0            alloc bit = 001 : 할당 상태
  * -----------------------------------------            alloc bit = 000 : 가용 상태
@@ -42,7 +42,7 @@
  * -----------------------------------------
  * | Block size                | alloc bit | Footer
  * -----------------------------------------
- * 
+ *
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -220,6 +220,7 @@ static void place(void *bp, size_t allocate_size) // allocate_size는 헤더와 
         bp = NEXT_BLKP(bp);
         PUT(HDRP(bp), PACK(chunk_size - allocate_size, 0));
         PUT(FTRP(bp), PACK(chunk_size - allocate_size, 0));
+        coalesce(bp);
     }
     else
     { // 가용 블록에 할당을 하고 남은 공간이 최소 블록 크기보다 작으면 분할하지 않음
@@ -346,17 +347,34 @@ static void *find_fit(size_t asize)
  */
 void *mm_realloc(void *ptr, size_t size)
 {
-    void *oldptr = ptr;
-    void *newptr;
-    size_t copySize;
+    void *oldptr = ptr; // 이전 포인터
+    void *newptr;       // 새로 메모리 할당할포인터
 
-    newptr = mm_malloc(size); // 새로운 크기만큼의 새 블록을 할당
-    if (newptr == NULL)
-        return NULL;
-    copySize = GET_SIZE(HDRP(oldptr)); // 복사해오려는 기존 블록의 크기
-    if (size < copySize)               // 새로운 크기가 기존 크기보다 작다면, 새로운 크기만큼만 복사
-        copySize = size;
-    memcpy(newptr, oldptr, copySize); // 기존 블록의 데이터를 새 블록으로 복사
-    mm_free(oldptr);                  // 기존 블록을 가용 상태로 설정
-    return newptr;
+    size_t originsize = GET_SIZE(HDRP(oldptr)); // 원본 사이즈
+    size_t newsize = size + DSIZE;              // 새 사이즈
+
+    // 새로운 사이즈가 원본 사이즈보다 작거나 같으면
+    if (newsize <= originsize)
+    {
+        return oldptr;
+    }
+    else
+    {                                                                    // 기존 블록의 다음 블록이 가용 블록이고, 추가 사이즈가 충분하면
+        size_t addSize = originsize + GET_SIZE(HDRP(NEXT_BLKP(oldptr))); // 추가 사이즈 -> 헤더 포함 사이즈
+        if (!GET_ALLOC(HDRP(NEXT_BLKP(oldptr))) && (newsize <= addSize))
+        {                                        // 가용 블록이고 사이즈 충분
+            PUT(HDRP(oldptr), PACK(addSize, 1)); // 새로운 헤더
+            PUT(FTRP(oldptr), PACK(addSize, 1)); // 새로운 푸터
+            return oldptr;
+        }
+        else // 새로운 블록 할당
+        {
+            newptr = mm_malloc(newsize);
+            if (newptr == NULL)
+                return NULL;
+            memcpy(newptr, oldptr, newsize);
+            mm_free(oldptr);
+            return newptr;
+        }
+    }
 }
