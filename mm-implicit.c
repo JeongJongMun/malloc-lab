@@ -114,7 +114,6 @@ static void place(void *bp, size_t asize);
 
 /*
  * mm_init - malloc 패키지 초기화. Prologue block과 Epilogue block을 생성하고 초기 힙을 구성한다.
- *
  */
 int mm_init(void)
 {
@@ -128,7 +127,7 @@ int mm_init(void)
     heap_listp += (2 * WSIZE);
 
     // CHUNKSIZE만큼의 가용 블록으로 초기 힙을 확장한다.
-    if (extend_heap(CHUNKSIZE / WSIZE) == NULL) // 16
+    if (extend_heap(CHUNKSIZE / WSIZE) == NULL)
         return -1;
     last_bp = heap_listp;
     return 0;
