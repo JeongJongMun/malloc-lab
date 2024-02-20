@@ -420,9 +420,7 @@ void *mm_realloc(void *ptr, size_t size)
 
     // 새로운 사이즈가 원본 사이즈보다 작거나 같으면
     if (newsize <= originsize)
-    {
         return oldptr;
-    }
     else
     {                                                                    // 기존 블록의 다음 블록이 가용 블록이고, 추가 사이즈가 충분하면
         size_t addSize = originsize + GET_SIZE(HDRP(NEXT_BLKP(oldptr))); // 추가 사이즈 -> 헤더 포함 사이즈
