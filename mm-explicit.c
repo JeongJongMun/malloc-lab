@@ -4,7 +4,7 @@
  * 가용 블록은 이중 연결 리스트로 구성되어 있으며, 반환되는 블록들을 리스트의 시작 부분에 삽입하는 후입선출(LIFO) 순으로 유지한다.
  * 이 방법에서는 더블 워드 정렬을 사용하며, 모든 블록의 헤더와 풋터에 크기와 할당 비트를 저장한다. (1 Word = 4 Byte)
  * 최소 블록 크기는 4 Word (16 Byte)이며, 헤더와 풋터는 각각 1 Word이다.
- * 
+ *
  * 사용 가능한 메모리 할당 정책은 다음과 같다.
  * 1. First Fit: 가용 블록 리스트에서 처음으로 적합한 블록을 찾는다.
  * 2. Best Fit: 가용 블록 리스트에서 가장 작은 적합한 블록을 찾는다.
@@ -19,7 +19,7 @@
  * 7. mm_realloc()
  * 8. mm_init()
  * 9. heap_listp -> free_listp로 변경
- * 
+ *
  */
 
 /*
@@ -86,6 +86,7 @@
 /* 힙 메모리 할당 정책 */
 // #define FIRST_FIT // 48 + 40 = 88
 #define BEST_FIT // 52 + 40 = 92
+// #define WORST_FIT // 45 + 40 = 85
 
 // 단일 워드 (4) 또는 더블 워드 (8) 정렬
 #define ALIGNMENT 8
@@ -339,11 +340,11 @@ static void *coalesce(void *bp)
     return bp;
 }
 
+#if defined(FIRST_FIT)
 /*
  * First Fit: 가용 블록 리스트에서 처음으로 적합한 블록을 찾는다.
  * 명시적 가용 리스트 방법에선, 가용 블록 리스트를 순회하며 가장 먼저 적합한 블록을 찾는다.
  */
-#if defined(FIRST_FIT)
 static void *find_fit(size_t asize)
 {
     for (void *bp = free_listp; bp != NULL; bp = GET_SUCC(bp))
@@ -357,13 +358,13 @@ static void *find_fit(size_t asize)
     return NULL; // No fit
 }
 
+#elif defined(BEST_FIT)
 /*
  * Best Fit: 가용 블록 리스트에서 가장 작은 적합한 블록을 찾는다.
+ * 명시적 가용 리스트 방법에선, 가용 블록 리스트를 순회하며 가장 작은 적합한 블록을 찾는다.
  */
-#elif defined(BEST_FIT)
 static void *find_fit(size_t asize)
 {
-    void *bp;
     void *best_bp = NULL;
     size_t min_size = 0;
 
@@ -379,6 +380,30 @@ static void *find_fit(size_t asize)
         }
     }
     return best_bp;
+}
+#elif defined(WORST_FIT)
+/*
+ * Worst Fit: 가용 블록 리스트에서 가장 큰 적합한 블록을 찾는다.
+ * 명시적 가용 리스트 방법에선, 가용 블록 리스트를 순회하며 가장 큰 적합한 블록을 찾는다.
+ */
+static void *find_fit(size_t asize)
+{
+    void *worst_bp = NULL;
+    size_t max_size = 0;
+
+    for (void *bp = free_listp; bp != NULL; bp = GET_SUCC(bp))
+    {
+        if (asize <= GET_SIZE(HDRP(bp)))
+        {
+            if (max_size == 0 || GET_SIZE(HDRP(bp)) > max_size)
+            {
+                max_size = GET_SIZE(HDRP(bp));
+                worst_bp = bp;
+            }
+        }
+    }
+    return worst_bp;
+
 }
 #endif
 
