@@ -220,7 +220,6 @@ static void place(void *bp, size_t allocate_size) // allocate_size는 헤더와 
         bp = NEXT_BLKP(bp);
         PUT(HDRP(bp), PACK(chunk_size - allocate_size, 0));
         PUT(FTRP(bp), PACK(chunk_size - allocate_size, 0));
-        coalesce(bp);
     }
     else
     { // 가용 블록에 할당을 하고 남은 공간이 최소 블록 크기보다 작으면 분할하지 않음
