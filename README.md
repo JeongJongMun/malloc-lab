@@ -1,10 +1,10 @@
 #####################################################################
-# CS:APP Malloc Lab
-# Handout files for students
-#
-# Copyright (c) 2002, R. Bryant and D. O'Hallaron, All rights reserved.
-# May not be used, modified, or copied without permission.
-#
+<br/>\# CS:APP Malloc Lab
+<br/>\# Handout files for students
+<br/>\#
+<br/>\# Copyright (c) 2002, R. Bryant and D. O'Hallaron, All rights reserved.
+<br/>\# May not be used, modified, or copied without permission.
+<br/>\#
 ######################################################################
 
 ***********
@@ -12,17 +12,17 @@ Main Files:
 ***********
 
 mm.{c,h}	
-	Your solution malloc package. mm.c is the file that you
-	will be handing in, and is the only file you should modify.
+- Your solution malloc package. mm.c is the file that you
+- will be handing in, and is the only file you should modify.
 
 mdriver.c	
-	The malloc driver that tests your mm.c file
+- The malloc driver that tests your mm.c file
 
 short{1,2}-bal.rep
-	Two tiny tracefiles to help you get started. 
+- Two tiny tracefiles to help you get started. 
 
 Makefile	
-	Builds the driver
+- Builds the driver
 
 **********************************
 Other support files for the driver
