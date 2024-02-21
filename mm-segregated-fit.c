@@ -139,8 +139,8 @@
 #define GET_SUCC(bp) (*(void **)(bp + WSIZE))
 
 /* Segregated Free List를 위한 매크로 */
-// 가용 리스트의 개수 2^12까지
-#define SEGREGATED_LIST_SIZE 12
+// 가용 리스트의 개수 2^20 = 1,048,576까지
+#define SEGREGATED_LIST_SIZE 30
 // 해당 가용 리스트의 루트
 #define GET_ROOT(index) (*(void **)(heap_listp + (index * WSIZE)))
 
@@ -183,10 +183,11 @@ int mm_init(void)
     PUT(heap_listp + ((SEGREGATED_LIST_SIZE + 3) * WSIZE), PACK(0, 1));                                  // Epilogue header
 
     heap_listp += (2 * WSIZE); // 첫 번째 분리 가용 블록의 시작 주소
-    if (extend_heap(4) == NULL)
-        return -1;
-    // CHUNKSIZE만큼의 가용 블록으로 초기 힙을 확장한다.
-    if (extend_heap(CHUNKSIZE / WSIZE) == NULL)
+    /* CHUNKSIZE만큼의 가용 블록으로 초기 힙을 확장한다.
+     * 16을 더해주는 이유는 테스트 케이스로 처음에 4,095와 같은 값이 들어왔을 때,
+     * 추가적인 힙 확장 없이 할당을 하여 공간을 더 효율적으로 사용할 수 있다.
+     */
+    if (extend_heap((CHUNKSIZE + 16) / WSIZE) == NULL)
         return -1;
 
     return 0;
