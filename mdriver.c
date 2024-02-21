@@ -89,7 +89,7 @@ typedef struct {
 /********************
  * Global variables
  *******************/
-int verbose = 0;        /* global flag for verbose output */
+int verbose = 1;        /* global flag for verbose output */
 static int errors = 0;  /* number of errs found when running student malloc */
 char msg[MAXLINE];      /* for whenever we need to compose an error message */
 

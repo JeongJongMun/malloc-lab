@@ -1,7 +1,7 @@
 #
 # Students' Makefile for the Malloc Lab
 #
-TEAM = JeongJongMun# 자신의 깃허브 이름으로 설정
+TEAM = EririnG# 자신의 깃허브 이름으로 설정
 VERSION = 1
 # HANDINDIR = /afs/cs.cmu.edu/academic/class/15213-f01/malloclab/handin
 HANDINDIR = Week05/
