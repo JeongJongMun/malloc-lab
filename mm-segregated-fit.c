@@ -1,7 +1,7 @@
 /*
  * < mm-segregated-fit.c >
  * 이 방법은 분리 가용 리스트(Segregated Free List)를 사용하여 메모리 할당을 관리하는 malloc 패키지를 구현하였다.
- * 다수의 가용 리스트를 유지하며, 각 리스트는 2^k의 크기 클래스로 구분된다.
+ * 다수의 명시적 가용 리스트를 유지하며, 각 리스트는 2^k의 크기 클래스로 구분된다.
  * 각 클래스는 2^k 이상 2^(k+1) 미만의 크기를 가진 블록을 저장하고, 분리 맞춤(Segregated Fit)방식을 사용한다.
  * 이 방법에서는 더블 워드 정렬을 사용하며, 모든 블록의 헤더와 풋터에 크기와 할당 비트를 저장한다. (1 Word = 4 Byte)
  * 최소 블록 크기는 4 Word (16 Byte)이며, 헤더와 풋터는 각각 1 Word이다.
@@ -24,29 +24,29 @@
 /*
  * < 분리 가용 리스트(Segregated Free List) >
  *
- *                                                     heap_listp
- *                                                         |
- *                                                         |
- *                                                         |
- *                                                         V
- * ---------------------------------------------------------
- * | Alignment Padding | Prologue Header | Prologue Footer | . . . . 아래에 이어서 그리겠음
- * ---------------------------------------------------------
- *                                                                                                                            mem_brk
- *                                                                                                                               |
- *                                                                                                                               |
- *                                                                                                                               |
- * SEGREGATED_LIST_SIZE 만큼의 Segregate Free List Root 생성. 각각의 루트가 크기 클래스임.                                          V
- * -------------------------------------------------------------------------------------------------------------------------------
- * Segregate Free List Root | ... | Segregate Free List Root | Free Block | ... | Free Block | ...| Free Block | Epilogue Header |
- * -------------------------------------------------------------------------------------------------------------------------------
- *
- *
+*                                    heap_listp
+*                                        |
+*                                        |
+*                                        |
+*                                        V
+ * ---------------------------------------
+ * | Alignment Padding | Prologue Header | . . . . 아래에 이어서 그리겠음
+ * ---------------------------------------
+*                                                                                                                                               mem_brk
+*                                                                                                                                                  |
+*                                                                                                                                                  |
+*                                                                                                                                                  |
+*                                                                                                                                                  V
+ * -------------------------------------------------------------------------------------------------------------------------------------------------
+ * Segregate Free List Root | ... | Segregate Free List Root | Prologue Footer | Free Block | ... | Free Block | ...| Free Block | Epilogue Header |
+ * -------------------------------------------------------------------------------------------------------------------------------------------------
  *
  * Alignment Padding: 8의 배수로 맞추기 위한 패딩 (값 = 0)
  * Prologue Header: 가용 블록의 시작을 나타내는 헤더 (값 = 8, 할당 비트 = 1)
+ * Segregate Free List Root: 각각의 크기 클래스에 대한 가용 리스트의 루트 (2^k)
  * Prologue Footer: 가용 블록의 끝을 나타내는 풋터 (값 = 8, 할당 비트 = 1)
  * Epilogue Header: 힙의 끝을 나타내는 헤더 (값 = 0, 할당 비트 = 1)
+ * 
  *
  * < 할당 블록 구조 >
  * 31 . . . . . . . . . . . . . . . . . .  0            alloc bit = 001 : 할당 상태
@@ -70,7 +70,7 @@
  * 31 . . . . . . . . . . . . . . . . . .  0            alloc bit = 001 : 할당 상태
  * -----------------------------------------            alloc bit = 000 : 가용 상태
  * | Block size                | alloc bit | Header
- * ----------------------------------------- <--- heap_listp
+ * -----------------------------------------
  * |           Predecessor Pointer         |    }
  * -----------------------------------------    }
  * |            Successor Pointer          |    } Old Payload
@@ -140,7 +140,7 @@
 
 /* Segregated Free List를 위한 매크로 */
 // 가용 리스트의 개수 2^20 = 1,048,576까지
-#define SEGREGATED_LIST_SIZE 30
+#define SEGREGATED_LIST_SIZE 20
 // 해당 가용 리스트의 루트
 #define GET_ROOT(index) (*(void **)(heap_listp + (index * WSIZE)))
 
@@ -175,19 +175,20 @@ int mm_init(void)
     // 8워드 크기의 초기 힙 생성
     if ((heap_listp = mem_sbrk((SEGREGATED_LIST_SIZE + 4) * WSIZE)) == (void *)-1)
         return -1;
-    PUT(heap_listp, 0);                                                                                  // Alignment padding
-    PUT(heap_listp + (1 * WSIZE), PACK((SEGREGATED_LIST_SIZE + 2) * WSIZE, 1));                          // Prologue header (Header + Footer + Segregated Free List)
+    PUT(heap_listp, 0);                                                                                  // Alignment Padding
+    PUT(heap_listp + (1 * WSIZE), PACK((SEGREGATED_LIST_SIZE + 2) * WSIZE, 1));                          // Prologue Header
     for (int i = 0; i < SEGREGATED_LIST_SIZE; i++)                                                       // Segragated Free List 초기화
         PUT(heap_listp + ((2 + i) * WSIZE), NULL);                                                       // 각각의 Segregated Free List Root
-    PUT(heap_listp + ((SEGREGATED_LIST_SIZE + 2) * WSIZE), PACK((SEGREGATED_LIST_SIZE + 2) * WSIZE, 1)); // Prologue footer (Header + Footer + Segregated Free List)
-    PUT(heap_listp + ((SEGREGATED_LIST_SIZE + 3) * WSIZE), PACK(0, 1));                                  // Epilogue header
+    PUT(heap_listp + ((SEGREGATED_LIST_SIZE + 2) * WSIZE), PACK((SEGREGATED_LIST_SIZE + 2) * WSIZE, 1)); // Prologue Footer
+    PUT(heap_listp + ((SEGREGATED_LIST_SIZE + 3) * WSIZE), PACK(0, 1));                                  // Epilogue Header
 
     heap_listp += (2 * WSIZE); // 첫 번째 분리 가용 블록의 시작 주소
+
     /* CHUNKSIZE만큼의 가용 블록으로 초기 힙을 확장한다.
-     * 16을 더해주는 이유는 테스트 케이스로 처음에 4,095와 같은 값이 들어왔을 때,
+     * 16을 더해주는 이유는 4번 테스트 케이스로 처음에 4,095와 같은 값이 들어왔을 때,
      * 추가적인 힙 확장 없이 할당을 하여 공간을 더 효율적으로 사용할 수 있다.
      */
-    if (extend_heap((CHUNKSIZE + 16) / WSIZE) == NULL)
+    if (extend_heap((CHUNKSIZE + 2 * DSIZE) / WSIZE) == NULL)
         return -1;
 
     return 0;
