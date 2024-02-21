@@ -53,8 +53,9 @@
 #include "memlib.h"
 
 /* 힙 메모리 할당 정책 */
-// #define FIRST_FIT // 48 + 13 = 61
-// #define BEST_FIT // 50 + 13 = 63
+// #define FIRST_FIT // 48 + 21 = 69
+// #define BEST_FIT // 50 + 21 = 71
+// #define WORST_FIT // 43 + 21 = 64
 #define NEXT_FIT // 46 + 40 = 86
 
 // 단일 워드 (4) 또는 더블 워드 (8) 정렬
@@ -105,7 +106,7 @@ team_t team = {
 
 /* 전역 변수 */
 static void *heap_listp; // 힙의 최초 블록을 가리키는 포인터
-static void *last_bp;    // 다음 삽입 위치를 가리키는 포인터 (next_fit()을 위한 변수)
+static void *last_bp;    // 다음 삽입 위치를 가리키는 포인터 (Next Fit을 위한 변수)
 /* 함수 프로토타입 */
 static void *coalesce(void *bp);
 static void *extend_heap(size_t words);
@@ -267,10 +268,10 @@ static void *coalesce(void *bp)
     return bp;
 }
 
+#if defined(FIRST_FIT)
 /*
  * First Fit: 가용 블록 리스트에서 처음으로 적합한 블록을 찾는다.
  */
-#if defined(FIRST_FIT)
 static void *find_fit(size_t asize)
 {
     void *bp;
@@ -285,10 +286,10 @@ static void *find_fit(size_t asize)
     return NULL; // No fit
 }
 
+#elif defined(BEST_FIT)
 /*
  * Best Fit: 가용 블록 리스트에서 가장 작은 적합한 블록을 찾는다.
  */
-#elif defined(BEST_FIT)
 static void *find_fit(size_t asize)
 {
     void *bp;
@@ -308,10 +309,35 @@ static void *find_fit(size_t asize)
     }
     return best_bp;
 }
+
+#elif defined(WORST_FIT)
+/*
+ * Worst Fit: 가용 블록 리스트에서 가장 큰 적합한 블록을 찾는다.
+ */
+static void *find_fit(size_t asize)
+{
+    void *bp;
+    void *worst_bp = NULL;
+    size_t max_size = 0;
+
+    for (bp = heap_listp; GET_SIZE(HDRP(bp)) > 0; bp = NEXT_BLKP(bp))
+    {
+        if (!GET_ALLOC(HDRP(bp)) && (asize <= GET_SIZE(HDRP(bp))))
+        {
+            if (max_size == 0 || GET_SIZE(HDRP(bp)) > max_size)
+            {
+                max_size = GET_SIZE(HDRP(bp));
+                worst_bp = bp;
+            }
+        }
+    }
+    return worst_bp;
+}
+
+#elif defined(NEXT_FIT)
 /*
  * Next Fit: 마지막으로 할당된 블록에서부터 가용 블록을 찾는다.
  */
-#elif defined(NEXT_FIT)
 static void *find_fit(size_t asize)
 {
     void *bp = last_bp;
