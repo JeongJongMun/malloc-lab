@@ -89,7 +89,7 @@ typedef struct {
 /********************
  * Global variables
  *******************/
-int verbose = 0;        /* global flag for verbose output */
+int verbose = 1;        /* global flag for verbose output */
 static int errors = 0;  /* number of errs found when running student malloc */
 char msg[MAXLINE];      /* for whenever we need to compose an error message */
 
@@ -150,7 +150,7 @@ int main(int argc, char **argv)
 
     int team_check = 1;  /* If set, check team structure (reset by -a) */
     int run_libc = 0;    /* If set, run libc malloc (set by -l) */
-    int autograder = 0;  /* If set, emit summary info for autograder (-g) */
+    int autograder = 1;  /* If set, emit summary info for autograder (-g) */
 
     /* temporaries used to compute the performance index */
     double secs, ops, util, avg_mm_util, avg_mm_throughput, p1, p2, perfindex;
@@ -224,6 +224,14 @@ int main(int argc, char **argv)
 	}
 	else if (*team.name2 != '\0')
 	    printf("Member 2 :%s:%s\n", team.name2, team.id2);
+
+	if (((*team.name3 != '\0') && (*team.id3 == '\0')) ||
+	    ((*team.name3 == '\0') && (*team.id3 != '\0'))) { 
+	    printf("ERROR.  You must fill in all or none of the team member 3 ID fields!\n");
+	    exit(1);
+	}
+	else if (*team.name3 != '\0')
+	    printf("Member 3 :%s:%s\n", team.name3, team.id3);
     }
 
     /* 

@@ -25,6 +25,7 @@ static char *mem_max_addr;   /* largest legal heap address */
 void mem_init(void)
 {
     /* allocate the storage we will use to model the available VM */
+    // malloc으로 힙의 최대 크기를 할당. 반환받은 메모리 블록 포인터가 NULL이면 에러
     if ((mem_start_brk = (char *)malloc(MAX_HEAP)) == NULL) {
 	fprintf(stderr, "mem_init_vm: malloc error\n");
 	exit(1);
@@ -58,10 +59,13 @@ void mem_reset_brk()
 void *mem_sbrk(int incr) 
 {
     char *old_brk = mem_brk;
+    // printf("cur heapsize %d / max heapsize %d / incr %d\n", mem_heapsize(), (size_t)(mem_max_addr - mem_start_brk), incr); // For Debugging
 
+    // 증가량이 음수거나 최대 주소를 넘어가면 에러
     if ( (incr < 0) || ((mem_brk + incr) > mem_max_addr)) {
 	errno = ENOMEM;
 	fprintf(stderr, "ERROR: mem_sbrk failed. Ran out of memory...\n");
+    fprintf(stderr, "cur %d / max %d / incr %d\n", mem_heapsize(), (size_t)(mem_max_addr - mem_start_brk), incr);
 	return (void *)-1;
     }
     mem_brk += incr;

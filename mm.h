@@ -17,6 +17,8 @@ typedef struct {
     char *id1;      /* login ID of first member */
     char *name2;    /* full name of second member (if any) */
     char *id2;      /* login ID of second member */
+    char *name3;    /* full name of third member (if any) */
+    char *id3;      /* login ID of third member */
 } team_t;
 
 extern team_t team;
